@@ -1,25 +1,9 @@
 const resolvers = {
-  Query: {
-    // returns an array of Tracks that will be used to populate the homepage grid of our web client
-    tracksForHome: (_, __, { dataSources }) => {
-      return dataSources.trackAPI.getTracksForHome();
-    },
-
-    // get a single track by ID, for the track page
-    track: (_, { id }, { dataSources }) => {
-      return dataSources.trackAPI.getTrack(id);
-    },
-
-    // get a single module by ID, for the module detail page
-    module: (_, { id }, { dataSources }) => {
-      return dataSources.trackAPI.getModule(id);
-    },
-  },
   Mutation: {
     // increments a track's numberOfViews property
     incrementTrackViews: async (_, { id }, { dataSources }) => {
       try {
-        const track = await dataSources.trackAPI.incrementTrackViews(id);
+        const track = await dataSources.tracksApi.incrementTrackViews(id);
         return {
           code: 200,
           success: true,
@@ -28,23 +12,43 @@ const resolvers = {
         };
       } catch (err) {
         return {
-          code: err.extensions.response.status,
+          code: err.extensions?.response.status || 500,
           success: false,
-          message: err.extensions.response.body,
+          message: err.extensions?.response.body || JSON.stringify(err),
           track: null,
         };
       }
     },
   },
-  Track: {
-    author: ({ authorId }, _, { dataSources }) => {
-      return dataSources.trackAPI.getAuthor(authorId);
+  Query: {
+    tracksForHome: (_, __, { dataSources }) => {
+      return dataSources.tracksApi.getTracksForHome();
     },
-
-    modules: ({ id }, _, { dataSources }) => {
-      return dataSources.trackAPI.getTrackModules(id);
+    track: (_, { id }, { dataSources }) => {
+      return dataSources.tracksApi.getTrack(id);
+    },
+    module: (_, { id }, { dataSources }) => {
+      return dataSources.tracksApi.getModule(id);
     },
   },
+  Track: {
+    author: (parent, __, { dataSources }) => {
+      return dataSources.tracksApi.getAuthor(parent.authorId);
+    },
+    modules: ({ id }, __, { dataSources }) => {
+      return dataSources.tracksApi.getTrackModules(id);
+    },
+    durationInSeconds: ({ length }) => length,
+  },
+  Module: {
+    durationInSeconds: ({ length }) => length,
+  },
+  // Different approach, seems to be a bad practice
+  // Module: {
+  //   track: (parent, _, { dataSources }) => {
+  //     return dataSources.tracksApi.getTrack(parent.trackId);
+  //   },
+  // },
 };
 
 module.exports = resolvers;
